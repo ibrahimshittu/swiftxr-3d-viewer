@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Titillium_Web } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const bigShouldersDisplay = Titillium_Web({
   subsets: ["latin-ext"],
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${bigShouldersDisplay.className} antialiased`}>
         {children}
+        <Toaster />
       </body>
     </html>
   );

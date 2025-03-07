@@ -7,20 +7,17 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
-
   const modelCenterRef = useRef(new THREE.Vector3(0, 0, 0));
   const modelTopRef = useRef(new THREE.Vector3(0, 0, 0));
-
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
-
   const hotspotRef = useRef<HTMLDivElement>(null);
 
   const [modelUrl, setModelUrl] = useState<string | null>(null);
-
   const [modelName, setModelName] = useState<string>("");
 
   useEffect(() => {
@@ -61,6 +58,7 @@ export default function Home() {
         modelUrl,
         (gltf: any) => {
           const model = gltf.scene;
+          model.position.y -= 0.2;
           scene.add(model);
 
           setModelName(model.name || "My Model");
@@ -82,12 +80,13 @@ export default function Home() {
 
           camera.position.copy(center);
           camera.position.x += size / 2.0;
-          camera.position.y += size / 2.0;
+          camera.position.y += size;
           camera.position.z += size / 2.0;
           camera.lookAt(center);
         },
         undefined,
         (error: unknown) => {
+          toast.error("Error loading GLTF file, please try again.");
           console.error("Error loading GLTF:", error);
         }
       );
