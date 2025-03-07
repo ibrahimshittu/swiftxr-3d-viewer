@@ -145,7 +145,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
       <header className="bg-gray-800 text-white p-2 px-6 flex items-center justify-start">
         <Image
           src="/swiftxr-logo.png"
@@ -168,7 +168,7 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <main className="flex-1 relative overflow-hidden" ref={containerRef}>
+      <main className="flex-1 relative " ref={containerRef}>
         {!modelUrl && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
             <p className="text-gray-600">Please upload a .GLB file.</p>
