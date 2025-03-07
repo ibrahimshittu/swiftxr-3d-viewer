@@ -30,3 +30,9 @@ SwiftXR 3D Viewer allows you to upload GLB Models, and view them in an interacti
 The application will be available at `http://localhost:3000`.
 
 ## Demo
+
+
+
+https://github.com/user-attachments/assets/eaa9d6ea-2daf-479f-8423-b226c85d79ae
+
+
