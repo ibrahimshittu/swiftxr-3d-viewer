@@ -1,101 +1,194 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import Image from "next/image";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const containerRef = useRef<HTMLDivElement>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const modelCenterRef = useRef(new THREE.Vector3(0, 0, 0));
+  const modelTopRef = useRef(new THREE.Vector3(0, 0, 0));
+
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+
+  const hotspotRef = useRef<HTMLDivElement>(null);
+
+  const [modelUrl, setModelUrl] = useState<string | null>(null);
+
+  const [modelName, setModelName] = useState<string>("");
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    sceneRef.current = scene;
+
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      containerRef.current.clientWidth / containerRef.current.clientHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(0, 2, 5);
+    cameraRef.current = camera;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(
+      containerRef.current.clientWidth,
+      containerRef.current.clientHeight
+    );
+    containerRef.current.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(5, 10, 7.5);
+    scene.add(directionalLight);
+
+    const loader = new GLTFLoader();
+    if (modelUrl) {
+      loader.load(
+        modelUrl,
+        (gltf: any) => {
+          const model = gltf.scene;
+          scene.add(model);
+
+          setModelName(model.name || "My Model");
+
+          const box = new THREE.Box3().setFromObject(model);
+          const size = box.getSize(new THREE.Vector3()).length();
+          const center = box.getCenter(new THREE.Vector3());
+
+          modelCenterRef.current.copy(center);
+
+          const right = center.clone().add(new THREE.Vector3(size / 2, 0, 0));
+
+          modelTopRef.current.copy(right);
+
+          controls.reset();
+          camera.near = size / 100;
+          camera.far = size * 100;
+          camera.updateProjectionMatrix();
+
+          camera.position.copy(center);
+          camera.position.x += size / 2.0;
+          camera.position.y += size / 2.0;
+          camera.position.z += size / 2.0;
+          camera.lookAt(center);
+        },
+        undefined,
+        (error: unknown) => {
+          console.error("Error loading GLTF:", error);
+        }
+      );
+    }
+
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      controls.update();
+      renderer.render(scene, camera);
+
+      if (hotspotRef.current && modelUrl) {
+        positionHotspot();
+      }
+    };
+    animate();
+
+    return () => {
+      renderer.dispose();
+      if (renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
+      scene.clear();
+    };
+  }, [modelUrl]);
+
+  const positionHotspot = () => {
+    if (
+      !cameraRef.current ||
+      !sceneRef.current ||
+      !containerRef.current ||
+      !hotspotRef.current
+    )
+      return;
+
+    const camera = cameraRef.current;
+    const container = containerRef.current;
+    const hotspotEl = hotspotRef.current;
+
+    const worldPos = modelTopRef.current.clone();
+
+    worldPos.project(camera);
+
+    const x = (worldPos.x * 0.5 + 0.5) * container.clientWidth;
+    const y = (-worldPos.y * 0.5 + 0.5) * container.clientHeight;
+
+    hotspotEl.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setModelUrl(url);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col relative">
+      <header className="bg-gray-800 text-white p-2 px-6 flex items-center justify-start">
+        <Image
+          src="/swiftxr-logo.png"
+          alt="SwiftXR Logo"
+          width={60}
+          height={16}
+        />
+        <h1 className="text-2xl font-bold">
+          SwiftXR
+          <span className="text-sm font-normal"> 3D Viewer</span>
+        </h1>
+      </header>
+
+      <Card className="absolute top-[92px] left-4 z-10">
+        <CardHeader>
+          <CardTitle>Upload Model</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input type="file" accept=".glb" onChange={handleFileChange} />
+        </CardContent>
+      </Card>
+
+      <main className="flex-1 relative" ref={containerRef}>
+        {!modelUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+            <p className="text-gray-600">Please upload a .GLB file.</p>
+          </div>
+        )}
+
+        {modelUrl && (
+          <div
+            ref={hotspotRef}
+            className="absolute hidden md:flex flex-row items-center space-x-2 pointer-events-none"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+            <div className="w-3 h-3 rounded-full border-1 border-gray-800 bg-white opacity-90 flex items-center justify-center" />
+
+            <div className="px-1 py-0 rounded border-1 border-gray-800 bg-white text-black text-xs opacity-90">
+              {modelName || "My Model"}
+            </div>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
