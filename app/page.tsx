@@ -168,7 +168,7 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <main className="flex-1 relative " ref={containerRef}>
+      <main className="flex-1 relative h-[calc(100%-92px)]" ref={containerRef}>
         {!modelUrl && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
             <p className="text-gray-600">Please upload a .GLB file.</p>
