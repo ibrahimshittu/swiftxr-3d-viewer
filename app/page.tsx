@@ -159,7 +159,7 @@ export default function Home() {
         </h1>
       </header>
 
-      <Card className="absolute top-[92px] left-4 z-10">
+      <Card className="absolute top-[92px] left-6 z-10">
         <CardHeader>
           <CardTitle>Upload Model</CardTitle>
         </CardHeader>
@@ -168,7 +168,7 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <main className="flex-1 relative" ref={containerRef}>
+      <main className="flex-1 relative overflow-hidden" ref={containerRef}>
         {!modelUrl && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
             <p className="text-gray-600">Please upload a .GLB file.</p>
@@ -183,7 +183,7 @@ export default function Home() {
             <div className="w-3 h-3 rounded-full border-1 border-gray-800 bg-white opacity-90 flex items-center justify-center" />
 
             <div className="px-1 py-0 rounded border-1 border-gray-800 bg-white text-black text-xs opacity-90">
-              {modelName || "My Model"}
+              {modelName}
             </div>
           </div>
         )}
